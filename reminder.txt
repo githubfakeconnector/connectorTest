@@ -1,0 +1,131 @@
+Secret Key : `9Lr02cVsmte9FZFJId35F57pzQb9m3EixKoRmK7v`
+Access Key : `AKIAJ75RGULX7Y7A2CSQ`
+Username : `wezen_guillaume`
+Password : `datasia2018$`
+URL de connexion : https://249546106966.signin.aws.amazon.com/console
+
+
+ubuntu@dw-migr-prod-bastion:~$ awless list instances
+|        ID ▲         |    ZONE    |         NAME         |  STATE  |   TYPE    |   PUBLIC IP   | PRIVATE IP  | UPTIME  |     KEYPAIR     |
+|---------------------|------------|----------------------|---------|-----------|---------------|-------------|---------|-----------------|
+| i-083d647165c351f84 | eu-west-1a | dw-prod-mongod       | running | t2.medium |               | 10.0.10.56  | 6 days  | id-dw-migr-prod |
+| i-0bba345f0d6f3d865 | eu-west-1b | dw-prod-tomcat       | running | c5.large  |               | 10.0.11.246 | 6 days  | id-dw-migr-prod |
+| i-0c79622ef78798c31 | eu-west-1a | dw-demo-parrot       | running | t2.micro  | 54.72.5.241   | 10.0.0.141  | 6 days  | id-dw-migr-prod |
+| i-0cbeed9edfbed54d7 | eu-west-1a | dw-migr-prod-bastion | running | t2.micro  | 54.72.181.171 | 10.0.0.97   | 2 weeks | id-dw-migr-prod |
+ubuntu@dw-migr-prod-bastion:~$ ssh -i .ssh/id-dw-migr-prod.pem 10.0.11.246
+Welcome to Ubuntu 16.04.3 LTS (GNU/Linux 4.4.0-1049-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  Get cloud support with Ubuntu Advantage Cloud Guest:
+    http://www.ubuntu.com/business/services/cloud
+
+35 packages can be updated.
+0 updates are security updates.
+
+
+*** System restart required ***
+Last login: Wed Feb 28 13:13:08 2018 from 10.0.0.97
+ubuntu@dw-prod-tomcat:~$ 
+
+
+Alexandre Kervadec [6:30 PM]
+Les infos :
+- Host : dw-prod-aurora-infra-rdscluster-14kly7t3t5zf6.cluster-cx6tpr3znlej.eu-west-1.rds.amazonaws.com
+- User root : `root`
+- Passwd root : `osones2018`
+- User utilisé par Tomcat : `datawords`
+- Passwd Datawords : `datasia`
+- Port : `3306`
+
+
+
+54.72.181.171 ubuntu
+
+
+Nom du bucket : `test-s3.datawords.com`
+Access Key ID : `AKIAJB7BRT3OTBHDB3PQ`
+Secret Access Key : `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`
+
+
+Julien Chivot [3:48 PM]
+https://pcc-37-187-228-189.ovh.com/vScope
+login : consulting
+password : Juvgb$6532
+
+
+QA AWS : http://datawords-loadbala-1o4saed8km4hr-1903794305.eu-west-1.elb.amazonaws.com
+
+AWS : 249546106966
+Bastion : 52.211.168.195
+
+By using this integration tool, your file(s) will be translated via Wezen by DATAWORDS and its translated version will be placed here in the same folder. 
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+          # PART FOR THE EBS VOLUME
+          INST_ID=$(curl 169.254.169.254/latest/meta-data/instance-id)
+          VOL_ID=${!Ref EBSVolume}
+          VOL_STATUS=''
+          until [ "$VOL_STATUS" == "\"available\"" ]; do
+            VOL_STATUS=$(aws --region ${AWS::Region} ec2 describe-volumes --volume-ids $VOL_ID --query Volumes[0].State)
+            sleep 5
+          done
+          aws --region ${AWS::Region} ec2 attach_volume --volume-id $VOL_ID --instance-id $INST_ID --device /dev/xvdb
+
+          mkdir /data
+
+          while [ ! -e /dev/xvdb ] ; do
+            sleep 5
+          done
+
+          if [[ $(sudo file -L -s /dev/xvdb) =~ "ext4" ]]; then
+            mount /dev/xvdb /data
+          else
+            mkfs.ext4 /dev/xvdb
+            mount /dev/xvdb /data
+          fi
+
+
+  # EBS Volume
+  EBSVolume:
+    Type: "AWS::EC2::Volume"
+    Properties:
+      AvailabilityZone: !Sub eu-west-1a
+      Size: 30
+      VolumeType: gp2
+      Tags:
+        - Key: scheduler:ebs-snapshot
+          Value: "0000;90;europe/paris;all"
+
+  TomcatEBSVolume:
+    Description: Tomcat EBS Volume storage
+    Value: !Ref EBSVolume
+    Export:
+      Name: !Sub ${Prefix}-${Env}-ebs-tomcat-name
+
+          	05_ebs_backup_mouting:
+              command: |
+                mkdir /data
+                mount /dev/nvme0n1p1 /data
+                cp -r /data/semantic-portal-data/ /
+                mkdir /validate_command_folder
+
+
+    mkdir -p /semantic-portal-data/Files
+    chown -R tomcat8:tomcat8 /semantic-portal-data/
+
+
+until [ "$VOL_STATUS" == "\"available\"" ]; do
+VOL_STATUS=$(aws --region ${AWS::Region} ec2 describe-volumes --volume-ids $VOL_ID --query Volumes[0].State)
+sleep 5
+done
